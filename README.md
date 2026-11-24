@@ -1,3 +1,4 @@
+[![CI](https://github.com/rgobov/copyflow-client/actions/workflows/ci.yml/badge.svg)](https://github.com/rgobov/copyflow-client/actions/workflows/ci.yml)
 # copyflow-client
 
 Copy-trading client app: receives **signed signals** from a copyflow server,
