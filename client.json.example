@@ -1,0 +1,17 @@
+{
+  "subscriptions": {
+    "1": {
+      "name": "VBO ORB follow",
+      "executor": "paper",
+      "confirm_mode": "auto",
+      "sizing": "equity_frac",
+      "equity_usd": 1000,
+      "leverage_cap": 2.0,
+      "max_notional_usd": 500,
+      "daily_loss_limit_pct": 5.0,
+      "max_drawdown_pct": 20.0,
+      "on_breach": "pause_and_close",
+      "blacklisted_symbols": []
+    }
+  }
+}
