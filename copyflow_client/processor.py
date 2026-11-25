@@ -51,8 +51,10 @@ class Processor:
         return self._subs
 
     @property
-    def settings(self) -> ClientSettings:
-        return self._settings
+    def settings(self) -> "ClientSettings":
+        from copyflow_client.config import get_settings
+
+        return get_settings()
 
     def adapter(self, cfg: SubConfig) -> ExecutionAdapter:
         if cfg.subscription_id not in self._adapters:
