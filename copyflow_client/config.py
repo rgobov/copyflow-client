@@ -21,6 +21,9 @@ class SubConfig(BaseModel):
     sizing: str = "equity_frac"  # equity_frac | fixed_usd | proportional
     fixed_usd: float = 0.0
     equity_usd: float = 1_000.0  # fallback for paper when live equity unknown
+    # follower portfolio allocation: share of total capital in this strategy
+    # (strict: requires total_capital_usd > 0; 0 -> signals skipped)
+    allocation_pct: float = 0.0
     leverage_cap: float = 2.0
     max_price_deviation_pct: float = 1.5
     slippage_bps: int = 15
@@ -52,6 +55,13 @@ class ClientSettings(BaseSettings):
     hl_agent_private_key: str = ""
     hl_agent_address: str = ""
     hl_api_url: str = "https://api.hyperliquid.xyz"
+
+    # follower portfolio: total capital distributed via per-sub allocation_pct
+    total_capital_usd: float = 0.0
+    display_currency: str = "USD"
+    # multi-market public prices for paper fills (BTC/SBER/AAPL/RELIANCE.NS)
+    use_marketdata: bool = False
+    market_tls_verify: bool = True
 
 
 @lru_cache

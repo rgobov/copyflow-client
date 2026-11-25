@@ -50,6 +50,10 @@ class Processor:
     def subs(self) -> dict[int, SubConfig]:
         return self._subs
 
+    @property
+    def settings(self) -> ClientSettings:
+        return self._settings
+
     def adapter(self, cfg: SubConfig) -> ExecutionAdapter:
         if cfg.subscription_id not in self._adapters:
             from copyflow_client.executor import build_adapter
@@ -91,15 +95,23 @@ class Processor:
                        leader_equity: float, day) -> dict:
         adapter = self.adapter(cfg)
         symbol = event.instrument.symbol
+
+        # follower portfolio allocation: share of total capital (strict)
+        effective_equity = (await adapter.account_state()).equity_usd
+        if self._settings.total_capital_usd > 0:
+            effective_equity = self._settings.total_capital_usd * (cfg.allocation_pct or 0.0) / 100.0
+            if effective_equity <= 0:
+                return await self._record(session, event, DecisionStatus.SKIPPED,
+                                          "no allocation (set allocation_pct > 0)")
+
         try:
             positions = await adapter.positions()
             current_pos = crisk.resolve_current(positions, symbol)
             ref_price = await adapter.mark_price(symbol) or event.ref_price
-            equity_now = (await adapter.account_state()).equity_usd
             action = resolve_action(event, current_pos)
             decision = compute_size(
                 event, action, limits_from(cfg), leader_equity,
-                positions, ref_price or 0.0, current_pos, equity_now_usd=equity_now,
+                positions, ref_price or 0.0, current_pos, equity_now_usd=effective_equity,
             )
             # client-side absolute cap
             if action in (Action.OPEN, Action.INCREASE, Action.FLIP):

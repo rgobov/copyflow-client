@@ -40,6 +40,22 @@ class MultiMarketData:
         self._fx_ttl = fx_ttl
 
     # ---- routing ----
+    async def market_currency(self, symbol: str) -> tuple[str, str]:
+        """Guess (market, quote currency) for a symbol: MOEX registry,
+        .NS/.BO suffix -> India, crypto majors -> crypto, else US."""
+        sym = symbol.upper()
+        base = sym.split("-")[0]
+        if self._registry:
+            tickers = await self._registry.moex_tickers()
+            if base in tickers:
+                spec = await self._registry.spec("moex", base)
+                return "ru", spec.currency if spec else "RUB"
+        if sym.endswith((".NS", ".BO")):
+            return "in", "INR"
+        if base in ("BTC", "ETH", "SOL", "BNB", "XRP", "DOGE", "ADA", "AVAX", "LINK", "TON"):
+            return "crypto", "USDT"
+        return "us", "USD"
+
     async def price(self, venue: str, symbol: str) -> float | None:
         sym = symbol.upper()
         if venue == "moex":

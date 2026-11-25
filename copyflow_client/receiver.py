@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from sqlalchemy import select
 
-from copyflow_client.config import ClientSettings, SubConfig
+from copyflow_client.config import ClientSettings, SubConfig, load_subscriptions
 from copyflow_client.db import ensure_schema, make_engine, make_session_factory
 from copyflow_client.models import Decision, ReceivedSignal
 from copyflow_client.processor import Processor
@@ -97,20 +97,47 @@ def create_app(settings: ClientSettings, subs: dict[int, SubConfig]) -> FastAPI:
                     await session.commit()
         return {"resumed": resumed}
 
+    @app.post("/reload")
+    async def reload_config(request: Request):
+        """Re-read client.json without restarting (update allocations live)."""
+        processor = request.app.state.processor
+        subs = load_subscriptions(processor.settings.config_file)
+        processor._subs = subs
+        return {"subscriptions": len(subs)}
+
     @app.get("/status")
     async def status(request: Request):
         processor = request.app.state.processor
+        settings = processor.settings
         accounts = []
+        by_market: dict[str, float] = {}
+        md = None
+        if settings.use_marketdata:
+            from copyflow_core.instruments import InstrumentRegistry
+            from copyflow_core.marketdata import MultiMarketData
+
+            md = MultiMarketData(
+                registry=InstrumentRegistry(verify_tls=settings.market_tls_verify),
+                verify_tls=settings.market_tls_verify,
+            )
         for sub_id, cfg in processor.subs.items():
             adapter = processor.adapter(cfg)
             positions = await adapter.positions()
             state = await adapter.account_state()
             async with processor.session_factory() as session:
                 day, risk = await processor._risk(session, cfg)
+            for p in positions:
+                if md:
+                    market, _ = await md.market_currency(p.symbol)
+                else:
+                    market = "crypto"
+                value = p.qty * (p.entry_price or 0)
+                by_market[market] = by_market.get(market, 0.0) + value
             accounts.append({
                 "subscription_id": sub_id,
                 "executor": cfg.executor,
                 "confirm_mode": cfg.confirm_mode,
+                "allocation_pct": cfg.allocation_pct,
                 "equity_usd": state.equity_usd,
                 "day_pnl_pct": round(risk.day_pnl_pct, 2),
                 "drawdown_pct": round(risk.drawdown_pct, 2),
@@ -119,11 +146,16 @@ def create_app(settings: ClientSettings, subs: dict[int, SubConfig]) -> FastAPI:
                 "positions": [{"symbol": p.symbol, "side": p.side, "qty": p.qty}
                               for p in positions],
             })
+        total_equity = sum(a["equity_usd"] for a in accounts)
         async with processor.session_factory() as session:
             decisions = (await session.execute(
                 select(Decision).order_by(Decision.id.desc()).limit(20)
             )).scalars().all()
         return {
+            "display_currency": settings.display_currency,
+            "total_capital_usd": settings.total_capital_usd,
+            "total_equity_usd": round(total_equity, 2),
+            "by_market": {k: round(v, 2) for k, v in sorted(by_market.items())},
             "accounts": accounts,
             "recent_decisions": [{"signal_id": d.signal_id, "status": d.status.value,
                                   "action": d.action, "reason": d.reason}

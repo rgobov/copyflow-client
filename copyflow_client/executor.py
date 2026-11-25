@@ -9,7 +9,18 @@ from copyflow_core.executors.paper import PaperConfig, PaperExecutor
 
 def build_adapter(cfg: SubConfig, settings: ClientSettings) -> ExecutionAdapter:
     if cfg.executor == "paper":
-        return PaperExecutor(PaperConfig(starting_equity_usd=cfg.equity_usd))
+        provider = None
+        if settings.use_marketdata:
+            from copyflow_core.instruments import InstrumentRegistry
+            from copyflow_core.marketdata import MultiMarketData
+
+            registry = InstrumentRegistry(verify_tls=settings.market_tls_verify)
+            md = MultiMarketData(registry=registry, verify_tls=settings.market_tls_verify)
+
+            async def provider(symbol: str) -> float | None:
+                return await md.price_by_symbol(symbol)
+
+        return PaperExecutor(PaperConfig(starting_equity_usd=cfg.equity_usd), price_provider=provider)
     if cfg.executor == "binance":
         return BinanceExecutor(
             api_key=settings.binance_api_key,
