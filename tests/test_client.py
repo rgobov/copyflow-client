@@ -65,7 +65,7 @@ def signal_payload(sub_id: int = 1, action: str = "open", side: str = "long",
 
 
 async def test_auto_execution_flow(tmp_path):
-    app, settings, subs = make_app(tmp_path)
+    app, settings, subs = make_app(tmp_path, subs=make_subs(confirm_mode="auto"))
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://c") as c:
@@ -96,7 +96,7 @@ async def test_bad_signature_rejected(tmp_path):
 
 
 async def test_stale_timestamp_rejected(tmp_path):
-    app, settings, _ = make_app(tmp_path)
+    app, settings, _ = make_app(tmp_path, subs=make_subs(confirm_mode="auto"))
     import json
 
     async with app.router.lifespan_context(app):
@@ -112,7 +112,7 @@ async def test_stale_timestamp_rejected(tmp_path):
 
 
 async def test_duplicate_signal_idempotent(tmp_path):
-    app, _, _ = make_app(tmp_path)
+    app, _, _ = make_app(tmp_path, subs=make_subs(confirm_mode="auto"))
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://c") as c:
@@ -131,7 +131,7 @@ async def test_duplicate_signal_idempotent(tmp_path):
 
 
 async def test_client_daily_loss_pauses_and_flattens(tmp_path):
-    app, _, subs = make_app(tmp_path)
+    app, _, subs = make_app(tmp_path, subs=make_subs(confirm_mode="auto"))
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://c") as c:

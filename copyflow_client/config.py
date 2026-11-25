@@ -17,7 +17,7 @@ class SubConfig(BaseModel):
     subscription_id: int
     name: str = ""
     executor: str = "paper"  # paper | hyperliquid | binance
-    confirm_mode: str = "auto"  # auto | confirm | manual
+    confirm_mode: str = "confirm"  # confirm (1-click default) | auto | manual
     sizing: str = "equity_frac"  # equity_frac | fixed_usd | proportional
     fixed_usd: float = 0.0
     equity_usd: float = 1_000.0  # fallback for paper when live equity unknown

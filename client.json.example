@@ -3,7 +3,7 @@
     "1": {
       "name": "VBO ORB follow",
       "executor": "paper",
-      "confirm_mode": "auto",
+      "confirm_mode": "confirm",
       "sizing": "equity_frac",
       "equity_usd": 1000,
       "leverage_cap": 2.0,
