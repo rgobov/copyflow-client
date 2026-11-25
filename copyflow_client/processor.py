@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from copyflow_client import risk as crisk
-from copyflow_client.config import SubConfig
+from copyflow_client.config import ClientSettings, SubConfig
 from copyflow_client.models import Decision, DecisionStatus, Fill, Order, OrderStatus
 from copyflow_core.executors.base import ExecutionAdapter, ExecutionError
 from copyflow_core.models import Action, SignalEvent
@@ -51,7 +51,7 @@ class Processor:
         return self._subs
 
     @property
-    def settings(self) -> "ClientSettings":
+    def settings(self) -> ClientSettings:
         from copyflow_client.config import get_settings
 
         return get_settings()
