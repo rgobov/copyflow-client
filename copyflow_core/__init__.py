@@ -1,4 +1,5 @@
-"""copyflow_core: canonical signal protocol, sizing, executors, webhook signing.
+"""copyflow_core: canonical signal protocol, sizing, executors, webhook signing,
+multi-market data and instrument specs.
 
 Shared by the copyflow server (private) and copyflow-client (public).
 """
